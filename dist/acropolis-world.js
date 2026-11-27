@@ -31,7 +31,7 @@
       accent: 'gold',
       color: [0.96, 0.77, 0.32],
       pos: [0.0, 7.6, -2.5],
-      pinOffset: 5.4,
+      pinOffset: 2.2,
       cam: { yaw: 0.36, pitch: 0.24, dist: 21.5, tx: 0.0, ty: 7.8, tz: -2.2 },
       routes: { aienos: '/omega/', interplane: '/omega/', standalone: '#omega-singularity' },
       desc: 'Unifies omega-mv, omega-helix, omega-turbo, omega-gpu-driver, aienux, and omega-4k-merkle: 408 B seed to 281 KB static GPU runner with zero CUDA, HIP, ROCr, Vulkan, OpenCL, or libc.',
@@ -109,7 +109,7 @@
     { glyph: '\u03A8', phase: 5.40, radius: 18.4, height: 15.1, color: [0.18, 0.83, 0.63] }
   ];
 
-  var OVERVIEW_CAM = { yaw: 0.44, pitch: 0.26, dist: 31.5, tx: 0.0, ty: 6.4, tz: 1.2 };
+  var OVERVIEW_CAM = { yaw: 0.44, pitch: 0.22, dist: 33.5, tx: 0.0, ty: 7.4, tz: 1.2 };
 
   function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
   function lerp(a, b, t) { return a + (b - a) * t; }
@@ -683,10 +683,12 @@
       '  let fdist = length(in.wpos - u.focus.xyz);\n' +
       '  let pulse = exp(-fdist * 0.14) * u.focus.w;\n' +
       '  let em = in.matp.x;\n' +
-      '  var hdr = in.col * (0.28 + ndl * 0.95 + em * 0.85) + in.col * (fres * 1.35 + pulse * 0.95) + vec3<f32>(spec);\n' +
+      '  let dm = clamp(u.params.w, 0.0, 1.0);\n' +
+      '  let inkCol = mix(in.col, in.col * 0.42 + vec3<f32>(0.02, 0.04, 0.08), dm);\n' +
+      '  var hdr = inkCol * (0.28 + ndl * 0.95 + em * mix(0.85, 0.35, dm)) + inkCol * (fres * mix(1.35, 0.45, dm) + pulse * 0.95) + vec3<f32>(spec * (1.0 - dm * 0.72));\n' +
       '  let dist = length(in.wpos - u.eye.xyz);\n' +
       '  let fog = clamp((dist - 12.0) / 145.0, 0.0, 0.88);\n' +
-      '  hdr = mix(hdr, vec3<f32>(0.0, 0.01, 0.03), fog);\n' +
+      '  hdr = mix(hdr, mix(vec3<f32>(0.0, 0.01, 0.03), vec3<f32>(0.76, 0.84, 0.93), dm), fog);\n' +
       '  hdr = (hdr * (2.51 * hdr + 0.03)) / (hdr * (2.43 * hdr + 0.59) + 0.14);\n' +
       '  hdr = pow(clamp(hdr, vec3<f32>(0.0), vec3<f32>(1.0)), vec3<f32>(0.4545));\n' +
       '  return vec4<f32>(hdr, 1.0);\n' +
@@ -999,6 +1001,7 @@
       'in vec3 v_pos, v_nrm, v_col, v_mat;\n' +
       'uniform vec3 u_eye;\n' +
       'uniform vec4 u_focus;\n' +
+      'uniform float u_dayMix;\n' +
       'out vec4 o_hdr;\n' +
       'void main(){\n' +
       '  vec3 N = normalize(v_nrm);\n' +
@@ -1009,10 +1012,12 @@
       '  vec3 H = normalize(L + V);\n' +
       '  float spec = pow(max(dot(N, H), 0.0), 36.0) * 1.15;\n' +
       '  float pulse = exp(-length(v_pos - u_focus.xyz) * 0.14) * u_focus.w;\n' +
-      '  vec3 hdr = v_col * (0.28 + ndl * 0.95 + v_mat.x * 0.85) + v_col * (fres * 1.35 + pulse * 0.95) + vec3(spec);\n' +
+      '  float dm = clamp(u_dayMix, 0.0, 1.0);\n' +
+      '  vec3 inkCol = mix(v_col, v_col * 0.40 + vec3(0.02, 0.04, 0.08), dm);\n' +
+      '  vec3 hdr = inkCol * (0.28 + ndl * 0.95 + v_mat.x * mix(0.85, 0.35, dm)) + inkCol * (fres * mix(1.35, 0.45, dm) + pulse * 0.95) + vec3(spec * (1.0 - dm * 0.72));\n' +
       '  float dist = length(v_pos - u_eye);\n' +
       '  float fog = clamp((dist - 12.0) / 145.0, 0.0, 0.88);\n' +
-      '  hdr = mix(hdr, vec3(0.0, 0.01, 0.03), fog);\n' +
+      '  hdr = mix(hdr, mix(vec3(0.0, 0.01, 0.03), vec3(0.76, 0.84, 0.93), dm), fog);\n' +
       '  o_hdr = vec4(max(hdr, vec3(0.0)), 1.0);\n' +
       '}\n'
     );
@@ -1163,7 +1168,8 @@
       warp: gl.getUniformLocation(objPrg, 'u_warp'),
       isHelix: gl.getUniformLocation(objPrg, 'u_isHelix'),
       eye: gl.getUniformLocation(objPrg, 'u_eye'),
-      focus: gl.getUniformLocation(objPrg, 'u_focus')
+      focus: gl.getUniformLocation(objPrg, 'u_focus'),
+      dayMix: gl.getUniformLocation(objPrg, 'u_dayMix')
     };
     var uStar = {
       mvp: gl.getUniformLocation(starPrg, 'u_mvp'),
@@ -1210,6 +1216,7 @@
       gl.uniform1f(uObj.warp, warpSpeed);
       gl.uniform3fv(uObj.eye, eye);
       gl.uniform4fv(uObj.focus, focusPos);
+      gl.uniform1f(uObj.dayMix, dayMix);
 
       if (!isAmbient && om3dVao && om3dVao.count > 0) {
         gl.uniform1i(uObj.isHelix, 0);

@@ -232,8 +232,8 @@
 
 .acr-title-plaque{
   pointer-events:auto;
-  max-width:460px;
-  padding:10px 14px;
+  max-width:340px;
+  padding:8px 12px;
   border-radius:var(--acr-radius-md);
   border:1px solid var(--acr-border-gold);
   background:var(--acr-surface);
@@ -245,12 +245,12 @@
   align-items:center;
   gap:7px;
   font-family:var(--acr-mono);
-  font-size:10px;
+  font-size:9.5px;
   font-weight:600;
   letter-spacing:0.11em;
   text-transform:uppercase;
   color:var(--acr-gold);
-  margin:0 0 4px;
+  margin:0 0 3px;
 }
 
 .acr-dot{
@@ -266,7 +266,7 @@
 .acr-heading{
   margin:0;
   font-family:var(--acr-serif);
-  font-size:clamp(18px,2.1vw,23px);
+  font-size:clamp(15px,1.75vw,19px);
   font-weight:700;
   letter-spacing:0.02em;
   line-height:1.15;
@@ -274,9 +274,9 @@
 }
 
 .acr-sub{
-  margin:4px 0 0;
-  font-size:12px;
-  line-height:1.45;
+  margin:3px 0 0;
+  font-size:11px;
+  line-height:1.35;
   color:var(--acr-muted);
 }
 
@@ -286,24 +286,24 @@
   flex-wrap:wrap;
   align-items:center;
   justify-content:flex-end;
-  gap:6px;
+  gap:5px;
 }
 
 .acr-btn{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  gap:6px;
-  min-height:33px;
-  padding:5px 10px;
+  gap:5px;
+  min-height:29px;
+  padding:4px 8px;
   border-radius:var(--acr-radius-sm);
   border:1px solid var(--acr-border);
   background:var(--acr-surface);
   color:var(--acr-btn-ink);
   font-family:var(--acr-mono);
-  font-size:11px;
+  font-size:10.5px;
   font-weight:600;
-  letter-spacing:0.04em;
+  letter-spacing:0.03em;
   cursor:pointer;
   box-shadow:0 4px 14px var(--acr-shadow);
   transition:border-color 140ms ease,background-color 140ms ease;
@@ -343,14 +343,14 @@
 .acr-telemetry{
   display:inline-flex;
   align-items:center;
-  gap:7px;
-  padding:5px 10px;
+  gap:6px;
+  padding:4px 8px;
   border-radius:var(--acr-radius-sm);
   border:1px solid var(--acr-border);
   background:var(--acr-surface);
   font-family:var(--acr-mono);
   font-size:10px;
-  letter-spacing:0.04em;
+  letter-spacing:0.03em;
   color:var(--acr-muted);
   white-space:nowrap;
 }
@@ -587,18 +587,23 @@
     height:clamp(520px,82vh,700px);
   }
   .acr-topbar{
-    top:10px;
-    left:12px;
-    right:12px;
+    top:8px;
+    left:10px;
+    right:10px;
+    gap:6px;
   }
   .acr-title-plaque{
     max-width:100%;
-    padding:8px 11px;
+    padding:6px 10px;
   }
   .acr-sub{
     display:none;
   }
   .acr-telemetry{
+    display:none;
+  }
+  .acr-btn[data-acr-action="quality"],
+  .acr-btn[data-acr-action="audio"]{
     display:none;
   }
   .acr-inspector{
