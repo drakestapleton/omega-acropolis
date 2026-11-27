@@ -7,8 +7,8 @@ const css = fs.readFileSync(path.join(root, 'dist/acropolis.css'), 'utf8');
 const engineJs = fs.readFileSync(path.join(root, 'dist/acropolis-world.js'), 'utf8');
 
 const holoHtml = `<div class="acr-holo-shell">
-  <section id="acropolis-world" data-acropolis-world="true" data-site="standalone" data-theme="aegean" data-wasm-url="off" aria-label="Neo-Hellenic Spatial Acropolis 3D World"></section>
-  <pre id="acr-holo-log" class="acr-insp-receipt">Booting Neo-Hellenic Spatial Acropolis VerdantUI Prism...</pre>
+  <section id="acropolis-world" data-acropolis-world="true" data-site="standalone" data-theme="aegean" data-world-url="off" aria-label="Omega Astral Cosmos 3D World"></section>
+  <pre id="acr-holo-log" class="acr-insp-receipt">Booting Omega Astral Cosmos Prism (Pure OM-2 Compiled)...</pre>
 </div>`;
 
 const holoCss = css + `\n.acr-holo-shell{display:grid;gap:10px;max-width:1180px;margin:0 auto}\n`;
@@ -19,7 +19,7 @@ const observerBridgeJs = `\n;(function () {
   var host = document.getElementById('acropolis-world');
   var log = document.getElementById('acr-holo-log');
   if (!host || !window.AcropolisWorld) return;
-  var inst = window.AcropolisWorld.mount(host, { site: 'standalone', theme: 'aegean', wasmUrl: 'off' });
+  var inst = window.AcropolisWorld.mount(host, { site: 'standalone', theme: 'aegean', worldUrl: 'off' });
 
   function updateLog(reason) {
     var st = inst.getStatus();
@@ -126,8 +126,8 @@ const payloadHash = crypto
 const holo = {
   schema: 'verdant-ui/holo/1',
   digest: 'sha256:' + payloadHash,
-  name: 'Omega Spatial Acropolis - Neo-Hellenic 3D World',
-  summary: 'Interactive Neo-Hellenic Spatial Acropolis 3D World Engine powered by Verdant Engine WASM, WebGL2 HDR/Shadow/PBR, zero-alloc Float32Array 4-strand celestial particles, dual Aegean Night / Sunlit Parian Marble themes, 5 clickable Greek sigil portals, and live Zero-Tracking Guest Shield.',
+  name: 'Omega Astral Cosmos v2.0 - Pure OM-2 Universe',
+  summary: 'Interactive Omega Astral Cosmos 3D World powered by pure seeded OM-2 compiled OM3D geometry verified live via SHA-256, WebGPU compute warp stars, 24 flying 4-strand DNA helices, zero-upload WebGL2 HDR bloom, and CBF 4K frame pacing (zero WASM, zero tracking).',
   streams: {
     inputs: {
       type: 'object',

@@ -1,0 +1,858 @@
+note SPDX-License-Identifier: Apache-2.0
+note astral_core.om: Pure seeded OM-2 Astral Universe geometry & FIPS 180-4 SHA-256 compiler.
+note Generates non-blocky cosmic geometry (zero cubes/boxes) into binary OM3D v2 format on stdout.
+note Vertex stride = 16 bytes: px,py,pz (i16 Q8), nx,ny,nz (i8 Q7), groupId (u8), r,g,b (u8), emissive (u8), metal (u8), rough (u8).
+
+const MAX_VERTS ulong 16384
+const MAX_INDICES ulong 65536
+const V_STRIDE ulong 16
+const HDR_BYTES ulong 64
+
+text sin_q12_tbl "0 101 201 301 401 501 601 700 799 897 995 1092 1189 1285 1380 1474 1567 1660 1751 1842 1931 2019 2106 2191 2276 2359 2440 2520 2598 2675 2751 2824 2896 2967 3035 3102 3166 3229 3290 3349 3406 3461 3513 3564 3612 3659 3703 3745 3784 3822 3857 3889 3920 3948 3973 3996 4017 4036 4052 4065 4076 4085 4091 4095 4096"
+text sha_k_tbl "1116352408 1899447441 3049323471 3921009573 961987163 1508970993 2453635748 2870763221 3624381080 310598401 607225278 1426881987 1925078388 2162078206 2614888103 3248222580 3835390401 4022224774 264347078 604807628 770255983 1249150122 1555081692 1996064986 2554220882 2821834349 2952996808 3210313671 3336571891 3584528711 113926993 338241895 666307205 773529912 1294757372 1396182291 1695183700 1986661051 2177026350 2456956037 2730485921 2820302411 3259730800 3345764771 3516065817 3600352804 4094571909 275423344 430227734 506948616 659060556 883997877 958139571 1322822218 1537002063 1747873779 1955562222 2024104815 2227730452 2361852424 2428436474 2756734187 3204031479 3329325298 1779033703 3144134277 1013904242 2773480762 1359893119 2600822924 528734635 1541459225"
+
+global g_sin long 256
+global g_out uchar 524288
+global g_vcount ulong 1
+global g_icount ulong 1
+
+note g_cfg: 0=grp, 1=cx, 2=cy, 3=cz, 4=tx, 5=tz, 6=rad, 7=tube, 8=sides, 9=slat, 10=clat, 11=py, 12=rr
+global g_cfg long 16
+global g_pts long 24
+global g_nrm long 4
+global g_tmp long 12
+global g_col uint 6
+
+global sha_k uint 72
+global sha_w uint 64
+global sha_v uint 8
+global sha_h uint 8
+global sha_blk uchar 64
+global sha_st ulong 2
+
+fn parse_sin to void
+  q = new long 65 0
+  p = ulong 0
+  i = ulong 0
+  while lt i 65 bound 70
+    while and lt p len sin_q12_tbl lt get sin_q12_tbl p 48 bound 4
+      p = add p 1
+    end
+    v = long 0
+    done = false
+    while not done bound 16
+      if ge p len sin_q12_tbl
+        done = true
+      else
+        ch = get sin_q12_tbl p
+        if lt ch 48
+          done = true
+        else
+          v = add mul v 10 long sub ch 48
+          p = add p 1
+        end
+      end
+    end
+    put q i v
+    i = add i 1
+  end
+  for k ulong 64
+    put g_sin k get q k
+    put g_sin add 64 k get q sub 64 k
+    put g_sin add 128 k neg get q k
+    put g_sin add 192 k neg get q sub 64 k
+  end
+end
+
+fn parse_sha_k to void
+  p = ulong 0
+  i = ulong 0
+  while lt i 72 bound 80
+    while and lt p len sha_k_tbl lt get sha_k_tbl p 48 bound 4
+      p = add p 1
+    end
+    v = ulong 0
+    done = false
+    while not done bound 16
+      if ge p len sha_k_tbl
+        done = true
+      else
+        ch = get sha_k_tbl p
+        if lt ch 48
+          done = true
+        else
+          v = add mul v 10 ulong sub ch 48
+          p = add p 1
+        end
+      end
+    end
+    put sha_k i uint v
+    i = add i 1
+  end
+end
+
+fn init_tables to void
+  parse_sin
+  parse_sha_k
+end
+
+fn sin256 a long to long
+  ret get g_sin ulong and a 255
+end
+
+fn cos256 a long to long
+  ret get g_sin ulong and add a 64 255
+end
+
+fn isqrt64 n long to long
+  if le n 0
+    ret 0
+  end
+  x = n
+  y = shr add x 1 1
+  while lt y x bound 64
+    x = y
+    y = shr add x div n x 1
+  end
+  ret x
+end
+
+fn clamp_i16 v long to long
+  if lt v -32767
+    ret -32767
+  end
+  if gt v 32767
+    ret 32767
+  end
+  ret v
+end
+
+fn clamp_i8 v long to long
+  if lt v -127
+    ret -127
+  end
+  if gt v 127
+    ret 127
+  end
+  ret v
+end
+
+fn clamp_u8 v long to uchar
+  if lt v 0
+    ret uchar 0
+  end
+  if gt v 255
+    ret uchar 255
+  end
+  ret uchar v
+end
+
+fn put_u16_le pos ulong v ulong to void
+  put g_out pos uchar and v 255
+  put g_out add pos 1 uchar and shr v 8 255
+end
+
+fn put_u32_le pos ulong v ulong to void
+  put g_out pos uchar and v 255
+  put g_out add pos 1 uchar and shr v 8 255
+  put g_out add pos 2 uchar and shr v 16 255
+  put g_out add pos 3 uchar and shr v 24 255
+end
+
+fn set_mat c_r uint c_g uint c_b uint em uint met uint rgh uint to void
+  put g_col 0 c_r
+  put g_col 1 c_g
+  put g_col 2 c_b
+  put g_col 3 em
+  put g_col 4 met
+  put g_col 5 rgh
+end
+
+fn set_center cx long cy long cz long grp long to void
+  put g_cfg 0 grp
+  put g_cfg 1 cx
+  put g_cfg 2 cy
+  put g_cfg 3 cz
+end
+
+fn set_nrm nx long ny long nz long to void
+  nl = isqrt64 add add mul nx nx mul ny ny mul nz nz
+  if gt nl 0
+    put g_nrm 0 clamp_i8 div mul nx 127 nl
+    put g_nrm 1 clamp_i8 div mul ny 127 nl
+    put g_nrm 2 clamp_i8 div mul nz 127 nl
+  else
+    put g_nrm 0 0
+    put g_nrm 1 127
+    put g_nrm 2 0
+  end
+end
+
+fn emit_v px long py long pz long to ulong
+  vc = get g_vcount 0
+  if ge vc MAX_VERTS
+    trap 5
+  end
+  b = add HDR_BYTES mul vc V_STRIDE
+  put_u16_le b ulong and clamp_i16 px 65535
+  put_u16_le add b 2 ulong and clamp_i16 py 65535
+  put_u16_le add b 4 ulong and clamp_i16 pz 65535
+  put g_out add b 6 uchar and get g_nrm 0 255
+  put g_out add b 7 uchar and get g_nrm 1 255
+  put g_out add b 8 uchar and get g_nrm 2 255
+  put g_out add b 9 uchar and get g_cfg 0 255
+  put g_out add b 10 clamp_u8 long get g_col 0
+  put g_out add b 11 clamp_u8 long get g_col 1
+  put g_out add b 12 clamp_u8 long get g_col 2
+  put g_out add b 13 clamp_u8 long get g_col 3
+  put g_out add b 14 clamp_u8 long get g_col 4
+  put g_out add b 15 clamp_u8 long get g_col 5
+  put g_vcount 0 add vc 1
+  ret vc
+end
+
+fn emit_tri a ulong b ulong c ulong to void
+  ic = get g_icount 0
+  if ge add ic 3 MAX_INDICES
+    trap 5
+  end
+  p = add 262144 mul ic 2
+  put_u16_le p a
+  put_u16_le add p 2 b
+  put_u16_le add p 4 c
+  put g_icount 0 add ic 3
+end
+
+fn emit_grid v0 ulong rows ulong cols ulong flip bool to void
+  st = add cols 1
+  r = ulong 0
+  while lt r rows bound 128
+    c = ulong 0
+    while lt c cols bound 128
+      a = add v0 add mul r st c
+      b = add a st
+      if flip
+        emit_tri a add a 1 b
+        emit_tri b add a 1 add b 1
+      else
+        emit_tri a b add a 1
+        emit_tri b add b 1 add a 1
+      end
+      c = add c 1
+    end
+    r = add r 1
+  end
+end
+
+fn sphere_pt alon long to void
+  clon = cos256 alon
+  slon = sin256 alon
+  slat = get g_cfg 9
+  nx = div mul slat clon 4096
+  ny = get g_cfg 10
+  nz = div mul slat slon 4096
+  set_nrm nx ny nz
+  rr = get g_cfg 12
+  px = add get g_cfg 1 div mul rr clon 4096
+  pz = add get g_cfg 3 div mul rr slon 4096
+  vi = emit_v px get g_cfg 11 pz
+end
+
+fn sphere_row r_q8 long ri ulong rings ulong segs ulong to void
+  alat = div mul long ri 128 long rings
+  slat = sin256 alat
+  clat = cos256 alat
+  put g_cfg 9 slat
+  put g_cfg 10 clat
+  t = div mul r_q8 clat 4096
+  put g_cfg 11 add get g_cfg 2 t
+  t = div mul r_q8 slat 4096
+  put g_cfg 12 t
+  si = ulong 0
+  while le si segs bound 48
+    sphere_pt div mul long si 256 long segs
+    si = add si 1
+  end
+end
+
+fn add_sphere r_q8 long rings ulong segs ulong to void
+  v0 = get g_vcount 0
+  ri = ulong 0
+  while le ri rings bound 48
+    sphere_row r_q8 ri rings segs
+    ri = add ri 1
+  end
+  emit_grid v0 rings segs false
+end
+
+fn rot_vec_x to void
+  ly = get g_tmp 1
+  lz = get g_tmp 2
+  sx = sin256 get g_cfg 4
+  cx = cos256 get g_cfg 4
+  t1 = mul ly cx
+  t2 = mul lz sx
+  put g_tmp 1 div sub t1 t2 4096
+  t1 = mul ly sx
+  t2 = mul lz cx
+  put g_tmp 2 div add t1 t2 4096
+end
+
+fn rot_vec_z to void
+  lx = get g_tmp 0
+  ly = get g_tmp 1
+  sz = sin256 get g_cfg 5
+  cz = cos256 get g_cfg 5
+  t1 = mul lx cz
+  t2 = mul ly sz
+  put g_tmp 0 div sub t1 t2 4096
+  t1 = mul lx sz
+  t2 = mul ly cz
+  put g_tmp 1 div add t1 t2 4096
+end
+
+fn emit_g_tmp_v to void
+  x = add get g_cfg 1 get g_tmp 0
+  y = add get g_cfg 2 get g_tmp 1
+  z = add get g_cfg 3 get g_tmp 2
+  vi = emit_v x y z
+end
+
+fn torus_pt u long v long to void
+  cu = cos256 u
+  su = sin256 u
+  cv = cos256 v
+  sv = sin256 v
+  put g_tmp 0 div mul cv cu 4096
+  put g_tmp 1 sv
+  put g_tmp 2 div mul cv su 4096
+  rot_vec_x
+  rot_vec_z
+  set_nrm get g_tmp 0 get g_tmp 1 get g_tmp 2
+  rr = add get g_cfg 6 div mul get g_cfg 7 cv 4096
+  put g_tmp 0 div mul rr cu 4096
+  put g_tmp 1 div mul get g_cfg 7 sv 4096
+  put g_tmp 2 div mul rr su 4096
+  rot_vec_x
+  rot_vec_z
+  emit_g_tmp_v
+end
+
+fn set_tilt tx long tz long to void
+  put g_cfg 4 tx
+  put g_cfg 5 tz
+end
+
+fn torus_ring u long sides ulong to void
+  j = ulong 0
+  while le j sides bound 16
+    vv = div mul long j 256 long sides
+    torus_pt u vv
+    j = add j 1
+  end
+end
+
+fn add_torus maj_q8 long min_q8 long segs ulong sides ulong to void
+  put g_cfg 6 maj_q8
+  put g_cfg 7 min_q8
+  v0 = get g_vcount 0
+  i = ulong 0
+  while le i segs bound 96
+    u = div mul long i 256 long segs
+    torus_ring u sides
+    i = add i 1
+  end
+  emit_grid v0 segs sides true
+end
+
+fn knot_v_emit cv long sv long to void
+  nx = div mul get g_tmp 3 cv 4096
+  nz = div mul get g_tmp 4 cv 4096
+  set_nrm nx sv nz
+  t_r = get g_cfg 7
+  ox = add get g_tmp 0 div mul t_r nx 4096
+  oy = add get g_tmp 1 div mul t_r sv 4096
+  oz = add get g_tmp 2 div mul t_r nz 4096
+  vi = emit_v ox oy oz
+end
+
+fn knot_ring to void
+  sides = ulong get g_cfg 8
+  j = ulong 0
+  while le j sides bound 16
+    v = div mul long j 256 long sides
+    cv = cos256 v
+    sv = sin256 v
+    knot_v_emit cv sv
+    j = add j 1
+  end
+end
+
+fn knot_step rad_q8 long i ulong segs ulong to void
+  t = div mul long i 256 long segs
+  put g_tmp 3 cos256 mul t 2
+  put g_tmp 4 sin256 mul t 2
+  put g_tmp 5 cos256 mul t 3
+  put g_tmp 6 sin256 mul t 3
+  t = div mul mul rad_q8 get g_tmp 5 38 409600
+  t = add rad_q8 t
+  put g_tmp 5 div mul t get g_tmp 3 4096
+  put g_tmp 0 add get g_cfg 1 get g_tmp 5
+  put g_tmp 5 div mul t get g_tmp 4 4096
+  put g_tmp 2 add get g_cfg 3 get g_tmp 5
+  put g_tmp 5 div mul mul rad_q8 get g_tmp 6 50 409600
+  put g_tmp 1 add get g_cfg 2 get g_tmp 5
+  knot_ring
+end
+
+fn add_torus_knot rad_q8 long tube_q8 long segs ulong sides ulong to void
+  put g_cfg 7 tube_q8
+  put g_cfg 8 long sides
+  v0 = get g_vcount 0
+  i = ulong 0
+  while le i segs bound 96
+    knot_step rad_q8 i segs
+    i = add i 1
+  end
+  emit_grid v0 segs sides true
+end
+
+fn helix_step y1 long rad_q8 long i ulong segs ulong to void
+  ang = add get g_cfg 9 div mul long i 512 long segs
+  put g_tmp 3 cos256 ang
+  put g_tmp 4 sin256 ang
+  ang = div mul rad_q8 get g_tmp 3 4096
+  put g_tmp 0 add get g_cfg 1 ang
+  ang = div mul rad_q8 get g_tmp 4 4096
+  put g_tmp 2 add get g_cfg 3 ang
+  ang = sub y1 get g_cfg 2
+  ang = div mul ang long i long segs
+  put g_tmp 1 add get g_cfg 2 ang
+  knot_ring
+end
+
+fn add_helix_strand y1 long rad_q8 long tube_q8 long ph long segs ulong to void
+  put g_cfg 7 tube_q8
+  put g_cfg 8 6
+  put g_cfg 9 ph
+  v0 = get g_vcount 0
+  i = ulong 0
+  while le i segs bound 64
+    helix_step y1 rad_q8 i segs
+    i = add i 1
+  end
+  emit_grid v0 segs 6 true
+end
+
+fn tube_basis dx long dy long dz long to bool
+  ln = isqrt64 add add mul dx dx mul dy dy mul dz dz
+  if le ln 0
+    ret false
+  end
+  put g_tmp 5 div mul dx 4096 ln
+  put g_tmp 6 div mul dy 4096 ln
+  put g_tmp 7 div mul dz 4096 ln
+  dx = get g_tmp 7
+  dz = neg get g_tmp 5
+  ln = isqrt64 add mul dx dx mul dz dz
+  if lt ln 256
+    dx = long 4096
+    dz = long 0
+    ln = 4096
+  end
+  dx = div mul dx 4096 ln
+  dz = div mul dz 4096 ln
+  put g_pts 9 dx
+  put g_pts 10 0
+  put g_pts 11 dz
+  put g_pts 12 div mul get g_tmp 6 dz 4096
+  put g_pts 13 div sub mul get g_tmp 7 dx mul get g_tmp 5 dz 4096
+  put g_pts 14 div neg mul get g_tmp 6 dx 4096
+  ret true
+end
+
+fn tube_cap_v bx long by long bz long cv long sv long to void
+  t1 = mul get g_pts 9 cv
+  t2 = mul get g_pts 12 sv
+  nx = div add t1 t2 4096
+  ny = div mul get g_pts 13 sv 4096
+  t1 = mul get g_pts 11 cv
+  t2 = mul get g_pts 14 sv
+  nz = div add t1 t2 4096
+  set_nrm nx ny nz
+  rq = get g_cfg 6
+  bx = add bx div mul rq nx 4096
+  by = add by div mul rq ny 4096
+  bz = add bz div mul rq nz 4096
+  vi = emit_v bx by bz
+end
+
+fn tube_cap bx long by long bz long r_q8 long sides ulong to void
+  put g_cfg 6 r_q8
+  j = ulong 0
+  while le j sides bound 12
+    v = div mul long j 256 long sides
+    cv = cos256 v
+    sv = sin256 v
+    tube_cap_v bx by bz cv sv
+    j = add j 1
+  end
+end
+
+fn add_tube_to x1 long y1 long z1 long r_q8 long sides ulong to void
+  dx = sub x1 get g_cfg 1
+  dy = sub y1 get g_cfg 2
+  dz = sub z1 get g_cfg 3
+  ok = tube_basis dx dy dz
+  if not ok
+    ret
+  end
+  v0 = get g_vcount 0
+  tube_cap get g_cfg 1 get g_cfg 2 get g_cfg 3 r_q8 sides
+  tube_cap x1 y1 z1 r_q8 sides
+  emit_grid v0 1 sides true
+end
+
+fn emit_stored_face to void
+  put g_tmp 0 sub get g_pts 3 get g_pts 0
+  put g_tmp 1 sub get g_pts 4 get g_pts 1
+  put g_tmp 2 sub get g_pts 5 get g_pts 2
+  put g_tmp 3 sub get g_pts 6 get g_pts 0
+  put g_tmp 4 sub get g_pts 7 get g_pts 1
+  put g_tmp 5 sub get g_pts 8 get g_pts 2
+  nx = sub mul get g_tmp 1 get g_tmp 5 mul get g_tmp 2 get g_tmp 4
+  ny = sub mul get g_tmp 2 get g_tmp 3 mul get g_tmp 0 get g_tmp 5
+  nz = sub mul get g_tmp 0 get g_tmp 4 mul get g_tmp 1 get g_tmp 3
+  set_nrm nx ny nz
+  i0 = emit_v get g_pts 0 get g_pts 1 get g_pts 2
+  i1 = emit_v get g_pts 3 get g_pts 4 get g_pts 5
+  i2 = emit_v get g_pts 6 get g_pts 7 get g_pts 8
+  emit_tri i0 i1 i2
+end
+
+fn set_p idx ulong x long y long z long to void
+  b = mul idx 3
+  put g_pts b x
+  put g_pts add b 1 y
+  put g_pts add b 2 z
+end
+
+fn add_tetra rad_q8 long h_q8 long rot_a long to void
+  cx = get g_cfg 1
+  cy = get g_cfg 2
+  cz = get g_cfg 3
+  ty = add cy h_q8
+  by = sub cy div h_q8 2
+  t = div mul rad_q8 cos256 rot_a 4096
+  put g_pts 9 add cx t
+  t = div mul rad_q8 sin256 rot_a 4096
+  put g_pts 10 add cz t
+  t = div mul rad_q8 cos256 add rot_a 85 4096
+  put g_pts 11 add cx t
+  t = div mul rad_q8 sin256 add rot_a 85 4096
+  put g_pts 12 add cz t
+  t = div mul rad_q8 cos256 add rot_a 171 4096
+  put g_pts 13 add cx t
+  t = div mul rad_q8 sin256 add rot_a 171 4096
+  put g_pts 14 add cz t
+  set_p 0 cx ty cz
+  set_p 1 get g_pts 11 by get g_pts 12
+  set_p 2 get g_pts 9 by get g_pts 10
+  emit_stored_face
+  set_p 1 get g_pts 13 by get g_pts 14
+  set_p 2 get g_pts 11 by get g_pts 12
+  emit_stored_face
+  set_p 1 get g_pts 9 by get g_pts 10
+  set_p 2 get g_pts 13 by get g_pts 14
+  emit_stored_face
+  set_p 0 get g_pts 9 by get g_pts 10
+  set_p 1 get g_pts 11 by get g_pts 12
+  set_p 2 get g_pts 13 by get g_pts 14
+  emit_stored_face
+end
+
+fn bipyr_slice rad_q8 long h_q8 long s long to void
+  cx = get g_cfg 1
+  cy = get g_cfg 2
+  cz = get g_cfg 3
+  a0 = div mul s 256 6
+  a1 = div mul add s 1 256 6
+  t = div mul rad_q8 cos256 a0 4096
+  put g_tmp 0 add cx t
+  t = div mul rad_q8 sin256 a0 4096
+  put g_tmp 1 add cz t
+  t = div mul rad_q8 cos256 a1 4096
+  put g_tmp 2 add cx t
+  t = div mul rad_q8 sin256 a1 4096
+  put g_tmp 3 add cz t
+  set_p 0 cx add cy h_q8 cz
+  set_p 1 get g_tmp 2 cy get g_tmp 3
+  set_p 2 get g_tmp 0 cy get g_tmp 1
+  emit_stored_face
+  set_p 0 cx sub cy h_q8 cz
+  set_p 1 get g_tmp 0 cy get g_tmp 1
+  set_p 2 get g_tmp 2 cy get g_tmp 3
+  emit_stored_face
+end
+
+fn add_bipyramid rad_q8 long h_q8 long to void
+  for s ulong 6
+    bipyr_slice rad_q8 h_q8 long s
+  end
+end
+
+note ---- FIPS 180-4 SHA-256 ----
+fn sha_reset to void
+  for j ulong 8
+    put sha_h j get sha_k add j 64
+  end
+  put sha_st 0 0
+  put sha_st 1 0
+end
+
+fn sha_s0 a uint to uint
+  ret xor xor rotr a 2 rotr a 13 rotr a 22
+end
+
+fn sha_s1 e uint to uint
+  ret xor xor rotr e 6 rotr e 11 rotr e 25
+end
+
+fn sha_g0 x uint to uint
+  ret xor xor rotr x 7 rotr x 18 shr x 3
+end
+
+fn sha_g1 x uint to uint
+  ret xor xor rotr x 17 rotr x 19 shr x 10
+end
+
+fn sha_rnd i ulong to void
+  e = get sha_v 4
+  t1 = add get sha_v 7 sha_s1 e
+  ch = xor and e get sha_v 5 and xor e 0xffffffff get sha_v 6
+  t1 = add add t1 ch add get sha_k i get sha_w i
+  a = get sha_v 0
+  b = get sha_v 1
+  c = get sha_v 2
+  maj = or or and a b and a c and b c
+  t2 = add sha_s0 a maj
+  put sha_v 7 get sha_v 6
+  put sha_v 6 get sha_v 5
+  put sha_v 5 e
+  put sha_v 4 add get sha_v 3 t1
+  put sha_v 3 c
+  put sha_v 2 b
+  put sha_v 1 a
+  put sha_v 0 add t1 t2
+end
+
+fn sha_compress to void
+  for i ulong 16
+    p = mul i 4
+    w0 = shl uint get sha_blk p 24
+    w1 = shl uint get sha_blk add p 1 16
+    w2 = shl uint get sha_blk add p 2 8
+    w3 = uint get sha_blk add p 3
+    put sha_w i or or w0 w1 or w2 w3
+  end
+  for i ulong 48
+    j = add i 16
+    s0 = sha_g0 get sha_w sub j 15
+    s1 = sha_g1 get sha_w sub j 2
+    put sha_w j add add get sha_w sub j 16 s0 add get sha_w sub j 7 s1
+  end
+  for i ulong 8
+    put sha_v i get sha_h i
+  end
+  for i ulong 64
+    sha_rnd i
+  end
+  for i ulong 8
+    put sha_h i add get sha_h i get sha_v i
+  end
+end
+
+fn sha_push b uchar to void
+  idx = get sha_st 0
+  put sha_blk idx b
+  idx = add idx 1
+  put sha_st 1 add get sha_st 1 1
+  if eq idx 64
+    sha_compress
+    idx = 0
+  end
+  put sha_st 0 idx
+end
+
+fn sha_finish to void
+  tot_bits = mul get sha_st 1 8
+  sha_push uchar 128
+  while ne get sha_st 0 56 bound 128
+    sha_push uchar 0
+  end
+  for i ulong 8
+    sh = mul sub 7 i 8
+    sha_push uchar and shr tot_bits sh 255
+  end
+  for i ulong 8
+    w = get sha_h i
+    q = add 32 mul i 4
+    put g_out q uchar and shr w 24 255
+    put g_out add q 1 uchar and shr w 16 255
+    put g_out add q 2 uchar and shr w 8 255
+    put g_out add q 3 uchar and w 255
+  end
+end
+
+fn build_cosmos to void
+  set_center 0 1946 -640 0
+  set_mat 255 215 110 215 220 30
+  add_sphere 480 10 16
+  set_mat 34 211 238 235 205 22
+  set_tilt 8 18
+  add_torus 760 26 40 6
+
+  set_center 0 -260 -640 1
+  set_mat 34 211 238 240 205 20
+  add_helix_strand 4400 840 36 0 40
+  set_mat 245 196 81 240 215 20
+  add_helix_strand 4400 840 36 64 40
+  set_mat 96 165 250 240 205 20
+  add_helix_strand 4400 840 36 128 40
+  set_mat 45 212 160 240 205 20
+  add_helix_strand 4400 840 36 192 40
+  set_mat 215 232 255 155 180 40
+  for r ulong 8
+    ry = mul long r 560
+    ang = mul long r 64
+    dx = div mul 820 cos256 ang 4096
+    dz = div mul 820 sin256 ang 4096
+    set_center dx ry add -640 dz 1
+    add_tube_to sub 0 dx ry sub -640 dz 18 5
+  end
+
+  set_center 0 1946 -640 2
+  set_mat 245 196 81 190 230 22
+  set_tilt 24 12
+  add_torus 1480 34 48 6
+  set_center 0 1946 -640 3
+  set_mat 34 211 238 195 225 22
+  set_tilt 108 32
+  add_torus 1840 32 48 6
+  set_center 0 1946 -640 4
+  set_mat 96 165 250 180 220 24
+  set_tilt 62 190
+  add_torus 2200 34 48 6
+
+  set_center 3174 1050 1894 5
+  set_mat 34 211 238 230 220 20
+  add_torus_knot 490 54 64 6
+  set_mat 245 196 81 185 230 24
+  set_tilt 36 18
+  add_torus 820 22 36 6
+
+  set_center -3123 1331 -1997 6
+  set_mat 96 165 250 210 240 20
+  add_tetra 560 660 0
+  set_mat 245 196 81 200 235 20
+  add_tetra 560 -660 42
+  set_mat 96 165 250 185 225 24
+  set_tilt 210 24
+  add_torus 860 22 36 6
+
+  set_center -3021 1050 2202 7
+  set_mat 45 212 160 220 210 22
+  add_sphere 440 8 14
+  set_mat 34 211 238 195 220 24
+  set_tilt 28 16
+  add_torus 720 20 36 6
+  set_mat 45 212 160 195 220 24
+  set_tilt 100 220
+  add_torus 820 20 36 6
+
+  set_center 1638 1050 3789 8
+  set_mat 239 91 60 225 235 22
+  add_bipyramid 450 680
+  set_mat 245 196 81 205 220 25
+  set_tilt 14 240
+  add_torus 880 32 40 6
+
+  set_center 0 1946 -640 9
+  set_mat 110 180 245 150 190 35
+  add_tube_to 3174 1050 1894 14 4
+  add_tube_to -3123 1331 -1997 14 4
+  add_tube_to -3021 1050 2202 14 4
+  add_tube_to 1638 1050 3789 14 4
+  set_center 0 700 0 9
+  set_mat 80 140 220 145 200 35
+  set_tilt 4 2
+  add_torus 5120 22 64 5
+end
+
+fn seal_om3d total ulong to void
+  sha_reset
+  paylen = sub total HDR_BYTES
+  k = ulong 0
+  while lt k paylen bound 450000
+    sha_push get g_out add HDR_BYTES k
+    k = add k 1
+  end
+  sha_finish
+end
+
+fn write_om3d total ulong to int
+  written = ulong 0
+  while lt written total bound 4096
+    chunk = sub total written
+    if gt chunk 65536
+      chunk = 65536
+    end
+    w = write 1 g_out written chunk
+    if le w 0
+      ret 2
+    end
+    written = add written ulong w
+  end
+  ret 0
+end
+
+fn pack_om3d to ulong
+  vc = get g_vcount 0
+  ic = get g_icount 0
+  v_end = add HDR_BYTES mul vc V_STRIDE
+  ibytes = mul ic 2
+  i = ulong 0
+  while lt i ibytes bound 131072
+    put g_out add v_end i get g_out add 262144 i
+    i = add i 1
+  end
+  total = add v_end ibytes
+  while ne rem total 4 0 bound 8
+    put g_out total uchar 0
+    total = add total 1
+  end
+  put g_out 0 uchar 79
+  put g_out 1 uchar 77
+  put g_out 2 uchar 51
+  put g_out 3 uchar 68
+  put_u32_le 4 2
+  put_u32_le 8 vc
+  put_u32_le 12 ic
+  put_u32_le 16 V_STRIDE
+  put_u32_le 20 1
+  put_u32_le 24 0x47454d4f
+  put_u32_le 28 0x32303241
+  ret total
+end
+
+fn finalize_and_write to int
+  total = pack_om3d
+  seal_om3d total
+  ret write_om3d total
+end
+
+fn main to int
+  init_tables
+  build_cosmos
+  ret finalize_and_write
+end
