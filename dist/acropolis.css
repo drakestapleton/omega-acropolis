@@ -265,6 +265,7 @@
   flex:none;
 }
 
+.acr-world .acr-title-plaque h2.acr-heading,
 .acr-heading{
   margin:0;
   font-family:var(--acr-serif);
