@@ -1,0 +1,625 @@
+:root{--acr-night-bg:#050e21;--acr-night-surface:#0a1a38e6;--acr-night-card:#0e2348f0;--acr-night-border:#2a4d85;--acr-night-border-gold:#f5c45180;--acr-night-ink:#faf5ea;--acr-night-muted:#c2d2ea;--acr-night-gold:#f5c451;--acr-night-bronze:#d4972a;--acr-night-cyan:#22d3ee;--acr-night-azure:#60a5fa;--acr-night-emerald:#2dd4a0;--acr-night-terra:#ef5b3c;--acr-night-btn:#163568;--acr-night-btn-hover:#1f488c;--acr-night-btn-ink:#faf5ea;--acr-night-cta-bg:#f5c451;--acr-night-cta-hover:#ffd56b;--acr-night-cta-ink:#07132a;--acr-night-shadow:#020612b8;--acr-day-bg:#d6e7f7;--acr-day-surface:#faf5eae8;--acr-day-card:#fffbf2f5;--acr-day-border:#c9b998;--acr-day-border-gold:#b8801688;--acr-day-ink:#12223d;--acr-day-muted:#3d5070;--acr-day-gold:#a66e08;--acr-day-bronze:#8c5b0a;--acr-day-cyan:#087ea4;--acr-day-azure:#1d56c4;--acr-day-emerald:#0f8a64;--acr-day-terra:#c44125;--acr-day-btn:#ede3cf;--acr-day-btn-hover:#e2d3b5;--acr-day-btn-ink:#12223d;--acr-day-cta-bg:#143d8a;--acr-day-cta-hover:#1b4fb0;--acr-day-cta-ink:#faf5ea;--acr-day-shadow:#12223d30;--acr-bg:var(--acr-night-bg);--acr-surface:var(--acr-night-surface);--acr-card:var(--acr-night-card);--acr-border:var(--acr-night-border);--acr-border-gold:var(--acr-night-border-gold);--acr-ink:var(--acr-night-ink);--acr-muted:var(--acr-night-muted);--acr-gold:var(--acr-night-gold);--acr-bronze:var(--acr-night-bronze);--acr-cyan:var(--acr-night-cyan);--acr-azure:var(--acr-night-azure);--acr-emerald:var(--acr-night-emerald);--acr-terra:var(--acr-night-terra);--acr-btn:var(--acr-night-btn);--acr-btn-hover:var(--acr-night-btn-hover);--acr-btn-ink:var(--acr-night-btn-ink);--acr-cta-bg:var(--acr-night-cta-bg);--acr-cta-hover:var(--acr-night-cta-hover);--acr-cta-ink:var(--acr-night-cta-ink);--acr-shadow:var(--acr-night-shadow);--acr-meander-a:#f5c45144;--acr-meander-b:#22d3ee33;--acr-flute-a:#ffffff10;--acr-flute-b:#00000018;--acr-serif:"Latin Modern Roman",Georgia,"Palatino Linotype","Book Antiqua",Palatino,serif;--acr-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;--acr-mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;--acr-radius-sm:6px;--acr-radius-md:12px;--acr-radius-lg:16px;--acr-radius-pill:999px}
+
+/* Neo-Hellenic Spatial Acropolis 3D World Engine Stylesheet
+ * 100% pure ASCII, all color literals confined strictly inside :root above.
+ * Compatible with strict CSP (style-src self) and interplane.io / aienos.com verifiers.
+ */
+
+[data-acr-theme="parian"],
+.acr-world[data-acr-theme="parian"]{
+  --acr-bg:var(--acr-day-bg);
+  --acr-surface:var(--acr-day-surface);
+  --acr-card:var(--acr-day-card);
+  --acr-border:var(--acr-day-border);
+  --acr-border-gold:var(--acr-day-border-gold);
+  --acr-ink:var(--acr-day-ink);
+  --acr-muted:var(--acr-day-muted);
+  --acr-gold:var(--acr-day-gold);
+  --acr-bronze:var(--acr-day-bronze);
+  --acr-cyan:var(--acr-day-cyan);
+  --acr-azure:var(--acr-day-azure);
+  --acr-emerald:var(--acr-day-emerald);
+  --acr-terra:var(--acr-day-terra);
+  --acr-btn:var(--acr-day-btn);
+  --acr-btn-hover:var(--acr-day-btn-hover);
+  --acr-btn-ink:var(--acr-day-btn-ink);
+  --acr-cta-bg:var(--acr-day-cta-bg);
+  --acr-cta-hover:var(--acr-day-cta-hover);
+  --acr-cta-ink:var(--acr-day-cta-ink);
+  --acr-shadow:var(--acr-day-shadow);
+}
+
+.acr-world{
+  position:relative;
+  width:100%;
+  min-height:560px;
+  height:clamp(540px,78vh,820px);
+  background:var(--acr-bg);
+  color:var(--acr-ink);
+  font-family:var(--acr-sans);
+  overflow:hidden;
+  overflow-x:clip;
+  border-top:2px solid var(--acr-border-gold);
+  border-bottom:2px solid var(--acr-border-gold);
+  box-sizing:border-box;
+  isolation:isolate;
+  user-select:none;
+}
+
+.acr-world *{
+  box-sizing:border-box;
+}
+
+.acr-world.acr-fullscreen{
+  position:fixed;
+  inset:0;
+  height:100vh;
+  min-height:100vh;
+  z-index:9990;
+  border:0;
+}
+
+/* Greek Meander Key Architectural Hairline Frieze (top and bottom) */
+.acr-meander{
+  position:absolute;
+  left:0;
+  right:0;
+  height:6px;
+  z-index:12;
+  pointer-events:none;
+  background-image:
+    repeating-linear-gradient(90deg,var(--acr-gold) 0 12px,transparent 12px 16px,var(--acr-bronze) 16px 20px,transparent 20px 24px),
+    repeating-linear-gradient(90deg,transparent 0 4px,var(--acr-meander-a) 4px 16px,transparent 16px 24px);
+  background-size:24px 3px,24px 3px;
+  background-position:0 0,0 3px;
+  background-repeat:repeat-x;
+  opacity:0.88;
+}
+
+.acr-meander-top{top:0}
+.acr-meander-bot{bottom:0}
+
+/* Fluted Doric vertical side moldings */
+.acr-flute-left,
+.acr-flute-right{
+  position:absolute;
+  top:6px;
+  bottom:6px;
+  width:10px;
+  z-index:11;
+  pointer-events:none;
+  background:repeating-linear-gradient(90deg,var(--acr-flute-b) 0 2px,var(--acr-flute-a) 2px 4px,var(--acr-flute-b) 4px 5px);
+  opacity:0.65;
+}
+
+.acr-flute-left{left:0;border-right:1px solid var(--acr-border-gold)}
+.acr-flute-right{right:0;border-left:1px solid var(--acr-border-gold)}
+
+/* Live 3D WebGL2 / Verdant Viewport */
+.acr-canvas{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
+  cursor:grab;
+  touch-action:pan-y;
+}
+
+.acr-canvas:active{
+  cursor:grabbing;
+}
+
+.acr-canvas:focus-visible{
+  outline:2px solid var(--acr-gold);
+  outline-offset:-3px;
+}
+
+/* Projected 3D Greek Sigil Portal Pins floating in world space */
+.acr-pins{
+  position:absolute;
+  inset:0;
+  z-index:6;
+  pointer-events:none;
+  overflow:hidden;
+}
+
+.acr-pin{
+  position:absolute;
+  left:0;
+  top:0;
+  transform:translate(-50%,-100%);
+  pointer-events:auto;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  padding:5px 11px 5px 7px;
+  border-radius:var(--acr-radius-pill);
+  border:1px solid var(--acr-border-gold);
+  background:var(--acr-surface);
+  color:var(--acr-ink);
+  font-family:var(--acr-sans);
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:0.02em;
+  line-height:1.1;
+  white-space:nowrap;
+  cursor:pointer;
+  box-shadow:0 6px 20px var(--acr-shadow);
+  transition:border-color 180ms ease,background-color 180ms ease,opacity 180ms ease;
+}
+
+.acr-pin:hover,
+.acr-pin:focus-visible,
+.acr-pin.acr-pin-active{
+  border-color:var(--acr-gold);
+  background:var(--acr-card);
+  outline:2px solid var(--acr-gold);
+  outline-offset:1px;
+  z-index:8;
+}
+
+.acr-pin-glyph{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:24px;
+  height:24px;
+  padding:0 5px;
+  border-radius:var(--acr-radius-pill);
+  font-family:var(--acr-serif);
+  font-size:13px;
+  font-weight:700;
+  color:var(--acr-cta-ink);
+  background:var(--acr-gold);
+}
+
+.acr-pin[data-accent="cyan"] .acr-pin-glyph{background:var(--acr-cyan)}
+.acr-pin[data-accent="azure"] .acr-pin-glyph{background:var(--acr-azure)}
+.acr-pin[data-accent="emerald"] .acr-pin-glyph{background:var(--acr-emerald)}
+.acr-pin[data-accent="terra"] .acr-pin-glyph{background:var(--acr-terra)}
+
+.acr-pin-label{
+  font-family:var(--acr-serif);
+  font-size:12px;
+  letter-spacing:0.03em;
+}
+
+/* Orbiting celestial Greek sigil labels */
+.acr-celestial{
+  position:absolute;
+  left:0;
+  top:0;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+  font-family:var(--acr-serif);
+  font-size:14px;
+  font-weight:700;
+  color:var(--acr-gold);
+  text-shadow:0 0 12px var(--acr-meander-a);
+  opacity:0.78;
+}
+
+/* Top Monumental Header Strip */
+.acr-topbar{
+  position:absolute;
+  top:14px;
+  left:18px;
+  right:18px;
+  z-index:10;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  pointer-events:none;
+}
+
+.acr-title-plaque{
+  pointer-events:auto;
+  max-width:440px;
+  padding:10px 15px;
+  border-radius:var(--acr-radius-md);
+  border:1px solid var(--acr-border-gold);
+  background:var(--acr-surface);
+  box-shadow:0 10px 30px var(--acr-shadow);
+}
+
+.acr-kicker{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-family:var(--acr-mono);
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--acr-gold);
+  margin:0 0 4px;
+}
+
+.acr-dot{
+  display:inline-block;
+  width:7px;
+  height:7px;
+  border-radius:var(--acr-radius-pill);
+  background:var(--acr-emerald);
+  flex:none;
+}
+
+.acr-heading{
+  margin:0;
+  font-family:var(--acr-serif);
+  font-size:clamp(18px,2.2vw,24px);
+  font-weight:700;
+  letter-spacing:0.02em;
+  line-height:1.15;
+  color:var(--acr-ink);
+}
+
+.acr-sub{
+  margin:4px 0 0;
+  font-size:12px;
+  line-height:1.45;
+  color:var(--acr-muted);
+}
+
+/* Top-Right Controls Cluster */
+.acr-controls{
+  pointer-events:auto;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+}
+
+.acr-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-height:34px;
+  padding:6px 11px;
+  border-radius:var(--acr-radius-sm);
+  border:1px solid var(--acr-border);
+  background:var(--acr-surface);
+  color:var(--acr-btn-ink);
+  font-family:var(--acr-mono);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:0.04em;
+  cursor:pointer;
+  box-shadow:0 4px 14px var(--acr-shadow);
+  transition:border-color 140ms ease,background-color 140ms ease;
+}
+
+.acr-btn:hover,
+.acr-btn:focus-visible{
+  border-color:var(--acr-gold);
+  background:var(--acr-btn-hover);
+  outline:none;
+}
+
+.acr-btn-gold{
+  border-color:var(--acr-border-gold);
+  color:var(--acr-gold);
+}
+
+.acr-btn-cta{
+  background:var(--acr-cta-bg);
+  color:var(--acr-cta-ink);
+  border-color:var(--acr-cta-bg);
+  text-decoration:none;
+}
+
+.acr-btn-cta:hover,
+.acr-btn-cta:focus-visible{
+  background:var(--acr-cta-hover);
+  border-color:var(--acr-cta-hover);
+  color:var(--acr-cta-ink);
+}
+
+/* Telemetry & Zero-Tracking Guest Shield Pill */
+.acr-telemetry{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 11px;
+  border-radius:var(--acr-radius-sm);
+  border:1px solid var(--acr-border);
+  background:var(--acr-surface);
+  font-family:var(--acr-mono);
+  font-size:10px;
+  letter-spacing:0.04em;
+  color:var(--acr-muted);
+  white-space:nowrap;
+}
+
+.acr-telemetry strong{
+  color:var(--acr-emerald);
+  font-weight:700;
+}
+
+/* Portal Inspection Sanctuary Card (right drawer when a portal is selected) */
+.acr-inspector{
+  position:absolute;
+  top:92px;
+  right:18px;
+  width:min(350px,calc(100% - 36px));
+  z-index:11;
+  padding:16px;
+  border-radius:var(--acr-radius-md);
+  border:1px solid var(--acr-border-gold);
+  background:var(--acr-card);
+  box-shadow:0 18px 46px var(--acr-shadow);
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.acr-inspector[hidden]{
+  display:none;
+}
+
+.acr-insp-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.acr-insp-sigil{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:40px;
+  height:40px;
+  padding:0 8px;
+  border-radius:var(--acr-radius-sm);
+  border:1px solid var(--acr-border-gold);
+  background:var(--acr-btn);
+  color:var(--acr-gold);
+  font-family:var(--acr-serif);
+  font-size:18px;
+  font-weight:700;
+}
+
+.acr-insp-titles{
+  min-width:0;
+  flex:1;
+}
+
+.acr-insp-ep{
+  display:block;
+  font-family:var(--acr-mono);
+  font-size:10px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--acr-gold);
+}
+
+.acr-insp-name{
+  margin:2px 0 0;
+  font-family:var(--acr-serif);
+  font-size:18px;
+  font-weight:700;
+  line-height:1.2;
+  color:var(--acr-ink);
+}
+
+.acr-insp-close{
+  min-width:30px;
+  height:30px;
+  padding:0;
+  border-radius:var(--acr-radius-sm);
+  border:1px solid var(--acr-border);
+  background:var(--acr-btn);
+  color:var(--acr-ink);
+  font-family:var(--acr-mono);
+  font-size:13px;
+  cursor:pointer;
+}
+
+.acr-insp-close:hover{
+  border-color:var(--acr-gold);
+}
+
+.acr-insp-desc{
+  margin:0;
+  font-size:13px;
+  line-height:1.55;
+  color:var(--acr-muted);
+}
+
+.acr-insp-receipt{
+  margin:0;
+  padding:9px 10px;
+  border-radius:var(--acr-radius-sm);
+  border:1px solid var(--acr-border);
+  background:var(--acr-bg);
+  color:var(--acr-ink);
+  font-family:var(--acr-mono);
+  font-size:11px;
+  line-height:1.5;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+
+.acr-insp-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+}
+
+/* Bottom 5-Portal Agora Dock & Navigation Hint */
+.acr-dock-wrap{
+  position:absolute;
+  left:18px;
+  right:18px;
+  bottom:14px;
+  z-index:10;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  pointer-events:none;
+}
+
+.acr-hint{
+  align-self:flex-start;
+  padding:3px 9px;
+  border-radius:var(--acr-radius-pill);
+  border:1px solid var(--acr-border);
+  background:var(--acr-surface);
+  font-family:var(--acr-mono);
+  font-size:10px;
+  letter-spacing:0.04em;
+  color:var(--acr-muted);
+}
+
+.acr-dock{
+  pointer-events:auto;
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:8px;
+}
+
+.acr-portal-btn{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:8px 10px;
+  border-radius:var(--acr-radius-sm);
+  border:1px solid var(--acr-border);
+  border-top:2px solid var(--acr-border-gold);
+  background:var(--acr-surface);
+  color:var(--acr-ink);
+  text-align:left;
+  cursor:pointer;
+  box-shadow:0 6px 18px var(--acr-shadow);
+  transition:border-color 150ms ease,background-color 150ms ease;
+}
+
+.acr-portal-btn:hover,
+.acr-portal-btn:focus-visible,
+.acr-portal-btn.acr-portal-active{
+  border-color:var(--acr-gold);
+  background:var(--acr-card);
+  outline:none;
+}
+
+.acr-portal-sigil{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:30px;
+  height:30px;
+  padding:0 5px;
+  border-radius:var(--acr-radius-sm);
+  background:var(--acr-btn);
+  border:1px solid var(--acr-border-gold);
+  color:var(--acr-gold);
+  font-family:var(--acr-serif);
+  font-size:14px;
+  font-weight:700;
+  flex:none;
+}
+
+.acr-portal-btn[data-accent="cyan"] .acr-portal-sigil{color:var(--acr-cyan)}
+.acr-portal-btn[data-accent="azure"] .acr-portal-sigil{color:var(--acr-azure)}
+.acr-portal-btn[data-accent="emerald"] .acr-portal-sigil{color:var(--acr-emerald)}
+.acr-portal-btn[data-accent="terra"] .acr-portal-sigil{color:var(--acr-terra)}
+
+.acr-portal-meta{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+}
+
+.acr-portal-name{
+  font-family:var(--acr-serif);
+  font-size:13px;
+  font-weight:700;
+  line-height:1.2;
+  color:var(--acr-ink);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.acr-portal-role{
+  font-family:var(--acr-mono);
+  font-size:10px;
+  line-height:1.2;
+  color:var(--acr-muted);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+@media (max-width:960px){
+  .acr-dock{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}
+
+@media (max-width:640px){
+  .acr-world{
+    min-height:520px;
+    height:clamp(520px,82vh,700px);
+  }
+  .acr-topbar{
+    top:10px;
+    left:12px;
+    right:12px;
+  }
+  .acr-title-plaque{
+    max-width:100%;
+    padding:8px 11px;
+  }
+  .acr-sub{
+    display:none;
+  }
+  .acr-telemetry{
+    display:none;
+  }
+  .acr-inspector{
+    top:auto;
+    bottom:112px;
+    left:12px;
+    right:12px;
+    width:auto;
+    padding:12px;
+  }
+  .acr-dock-wrap{
+    left:12px;
+    right:12px;
+    bottom:10px;
+  }
+  .acr-hint{
+    display:none;
+  }
+  .acr-dock{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px;
+  }
+  .acr-portal-btn{
+    padding:6px 8px;
+    gap:7px;
+  }
+  .acr-portal-role{
+    display:none;
+  }
+  .acr-pin-label{
+    display:none;
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .acr-pin,
+  .acr-btn,
+  .acr-portal-btn{
+    transition:none;
+  }
+}
