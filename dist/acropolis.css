@@ -50,6 +50,24 @@
   box-sizing:border-box;
 }
 
+.acr-world.acr-ambient{
+  min-height:190px;
+  height:clamp(180px,24vh,260px);
+  pointer-events:none;
+}
+
+.acr-world.acr-ambient .acr-canvas{
+  cursor:default;
+  pointer-events:none;
+}
+
+.acr-world.acr-ambient .acr-topbar,
+.acr-world.acr-ambient .acr-dock-wrap,
+.acr-world.acr-ambient .acr-pins,
+.acr-world.acr-ambient .acr-inspector{
+  display:none;
+}
+
 .acr-world.acr-fullscreen{
   position:fixed;
   inset:0;

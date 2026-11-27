@@ -231,6 +231,19 @@ assert.equal(st.shield.thirdPartyResources, 0);
 inst.destroy();
 console.log('[PASS] Headless mount + Verdant WASM + Canvas2D + dual theme + 5 portals verified:', JSON.stringify(st));
 
+/* 7b. Verify ambient mode mounts zero focusable children (WCAG aria-hidden safe) */
+const ambEl = makeFakeEl('div');
+ambEl.setAttribute('data-acropolis-world', 'true');
+ambEl.setAttribute('data-mode', 'ambient');
+ambEl.setAttribute('aria-hidden', 'true');
+const ambInst = sandbox.window.AcropolisWorld.mount(ambEl);
+assert.equal(ambEl.classList.contains('acr-ambient'), true);
+assert.equal(ambEl.children.length, 5, 'ambient mode must mount only canvas + 4 architectural trim layers');
+assert.equal(ambEl.children[0].getAttribute('tabindex'), null, 'ambient canvas must not be focusable inside aria-hidden');
+assert.equal(ambInst.getStatus().particles, 640);
+ambInst.destroy();
+console.log('[PASS] Ambient mode WCAG aria-hidden + lightweight 640-particle backdrop verified');
+
 /* 8. Print SHA-256 summary for all dist artifacts */
 console.log('\n=== SHA-256 RECEIPTS ===');
 for (const f of ['dist/acropolis-world.js', 'dist/acropolis.css', 'dist/omega-acropolis.holo', 'dist/verdant-wasm.wasm', 'demo.html']) {

@@ -1657,12 +1657,15 @@
     if (container.__acropolisInstance) return container.__acropolisInstance;
 
     var opts = options || {};
+    var mode = opts.mode || container.getAttribute('data-mode') || 'portal';
+    var isAmbient = mode === 'ambient';
     var siteKind = opts.site || container.getAttribute('data-site') || 'standalone';
     var theme = opts.theme || container.getAttribute('data-theme') || 'aegean';
     if (theme !== 'parian') theme = 'aegean';
-    var wasmUrlOpt = opts.wasmUrl || container.getAttribute('data-wasm-url') || 'auto';
+    var wasmUrlOpt = isAmbient ? 'off' : (opts.wasmUrl || container.getAttribute('data-wasm-url') || 'auto');
 
     container.classList.add('acr-world');
+    if (isAmbient) container.classList.add('acr-ambient');
     container.setAttribute('data-acr-theme', theme);
     container.replaceChildren();
 
@@ -1674,11 +1677,15 @@
     var fL = el('div', 'acr-flute-left'); fL.setAttribute('aria-hidden', 'true');
     var fR = el('div', 'acr-flute-right'); fR.setAttribute('aria-hidden', 'true');
 
-    /* Primary 3D Viewport Canvas */
+    /* Primary 3D Viewport Canvas (zero focusable controls when ambient / aria-hidden) */
     var canvas = el('canvas', 'acr-canvas');
-    canvas.setAttribute('tabindex', '0');
-    canvas.setAttribute('role', 'application');
-    canvas.setAttribute('aria-label', 'Interactive 3D Neo-Hellenic Spatial Acropolis. Drag to orbit, WASD or arrow keys to move, click any temple portal to inspect or enter.');
+    if (!isAmbient) {
+      canvas.setAttribute('tabindex', '0');
+      canvas.setAttribute('role', 'application');
+      canvas.setAttribute('aria-label', 'Interactive 3D Neo-Hellenic Spatial Acropolis. Drag to orbit, WASD or arrow keys to move, click any temple portal to inspect or enter.');
+    } else {
+      canvas.setAttribute('aria-hidden', 'true');
+    }
 
     /* 3D Projected Greek Sigil Pins Layer */
     var pinsLayer = el('div', 'acr-pins');
@@ -1794,13 +1801,17 @@
     }
 
     dockWrap.append(hint, dock);
-    container.append(canvas, pinsLayer, mTop, mBot, fL, fR, topbar, inspector, dockWrap);
+    if (isAmbient) {
+      container.append(canvas, mTop, mBot, fL, fR);
+    } else {
+      container.append(canvas, pinsLayer, mTop, mBot, fL, fR, topbar, inspector, dockWrap);
+    }
 
     /* Initialize 3D Renderer + Procedural Acropolis + Zero-Alloc Particle Ring */
     var renderer = createAcropolisWebGL2(canvas) || createCanvas2dFallback(canvas);
     var acropolisMesh = buildAcropolisStaticMesh();
     var dynMesh = createDynamicSceneBuffers();
-    var particles = createParticleField(renderer && renderer.isSoftware ? 900 : 1800);
+    var particles = createParticleField(isAmbient ? 640 : (renderer && renderer.isSoftware ? 900 : 1800));
     if (renderer) renderer.uploadAcropolis(acropolisMesh);
 
     /* Engine & Camera State */
@@ -2144,38 +2155,40 @@
         renderer.render(lastMvp, eyeVec, tgtVec, fov, tSec, dayMix, focusVec, particles.count, dpr, ptBuf);
       }
 
-      /* Project 5 Portal Pins & 7 Celestial Greek Sigils cleanly into screen space */
-      for (var i = 0; i < PORTALS.length; i++) {
-        var pt = PORTALS[i];
-        var vis = projectPoint(lastMvp, pt.pos[0], pt.pos[1] + pt.pinOffset, pt.pos[2], cssW, cssH, projTmp);
-        var pinEl = pinButtons[i];
-        if (vis && projTmp[0] > 28 && projTmp[0] < cssW - 28 && projTmp[1] > 68 && projTmp[1] < cssH - 96) {
-          pinEl.style.opacity = '1';
-          pinEl.style.pointerEvents = 'auto';
-          pinEl.style.transform = 'translate(' + projTmp[0].toFixed(1) + 'px,' + projTmp[1].toFixed(1) + 'px) translate(-50%,-100%)';
-        } else {
-          pinEl.style.opacity = '0';
-          pinEl.style.pointerEvents = 'none';
+      /* Project 5 Portal Pins & 7 Celestial Greek Sigils cleanly into screen space (portal mode only) */
+      if (!isAmbient) {
+        for (var i = 0; i < PORTALS.length; i++) {
+          var pt = PORTALS[i];
+          var vis = projectPoint(lastMvp, pt.pos[0], pt.pos[1] + pt.pinOffset, pt.pos[2], cssW, cssH, projTmp);
+          var pinEl = pinButtons[i];
+          if (vis && projTmp[0] > 28 && projTmp[0] < cssW - 28 && projTmp[1] > 68 && projTmp[1] < cssH - 96) {
+            pinEl.style.opacity = '1';
+            pinEl.style.pointerEvents = 'auto';
+            pinEl.style.transform = 'translate(' + projTmp[0].toFixed(1) + 'px,' + projTmp[1].toFixed(1) + 'px) translate(-50%,-100%)';
+          } else {
+            pinEl.style.opacity = '0';
+            pinEl.style.pointerEvents = 'none';
+          }
         }
-      }
 
-      for (var c = 0; c < CELESTIAL_SIGILS.length; c++) {
-        var cs = CELESTIAL_SIGILS[c];
-        var ang = cs.phase + (reducedMotion ? 0 : tSec * 0.14);
-        var ox = Math.cos(ang) * cs.radius;
-        var oz = Math.sin(ang) * cs.radius - 2.0;
-        var oy = cs.height + 1.45 + (reducedMotion ? 0 : Math.sin(tSec * 0.9 + c * 1.7) * 0.75);
-        var cvis = projectPoint(lastMvp, ox, oy, oz, cssW, cssH, projTmp);
-        var celEl = celestialLabels[c];
-        if (cvis && projTmp[0] > 20 && projTmp[0] < cssW - 20 && projTmp[1] > 56 && projTmp[1] < cssH - 90) {
-          celEl.style.opacity = '0.78';
-          celEl.style.transform = 'translate(' + projTmp[0].toFixed(1) + 'px,' + projTmp[1].toFixed(1) + 'px) translate(-50%,-50%)';
-        } else {
-          celEl.style.opacity = '0';
+        for (var c = 0; c < CELESTIAL_SIGILS.length; c++) {
+          var cs = CELESTIAL_SIGILS[c];
+          var ang = cs.phase + (reducedMotion ? 0 : tSec * 0.14);
+          var ox = Math.cos(ang) * cs.radius;
+          var oz = Math.sin(ang) * cs.radius - 2.0;
+          var oy = cs.height + 1.45 + (reducedMotion ? 0 : Math.sin(tSec * 0.9 + c * 1.7) * 0.75);
+          var cvis = projectPoint(lastMvp, ox, oy, oz, cssW, cssH, projTmp);
+          var celEl = celestialLabels[c];
+          if (cvis && projTmp[0] > 20 && projTmp[0] < cssW - 20 && projTmp[1] > 56 && projTmp[1] < cssH - 90) {
+            celEl.style.opacity = '0.78';
+            celEl.style.transform = 'translate(' + projTmp[0].toFixed(1) + 'px,' + projTmp[1].toFixed(1) + 'px) translate(-50%,-50%)';
+          } else {
+            celEl.style.opacity = '0';
+          }
         }
-      }
 
-      if (nowMs - lastHudMs > 450) updateTelemetry(nowMs);
+        if (nowMs - lastHudMs > 450) updateTelemetry(nowMs);
+      }
     }
 
     updateTelemetry(0);
